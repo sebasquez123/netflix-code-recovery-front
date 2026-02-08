@@ -134,7 +134,7 @@ Este proyecto es **UNLICENSED** - Todos los derechos reservados.
 
 ## 👥 Autor
 
-**BlueSkyAI**
+**[Sebasquez](https://www.linkedin.com/in/sebasquez)**
 
 ---
 

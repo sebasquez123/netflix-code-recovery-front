@@ -2,7 +2,7 @@
   "name": "phit-frontend",
   "private": true,
   "license": "UNLICENSED",
-  "author": "BlueSkyAI",
+  "author": "Sebasquez",
   "version": "0.4.7",
   "scripts": {
     "build": "next build",
