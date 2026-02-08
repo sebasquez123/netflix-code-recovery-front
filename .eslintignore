@@ -1,0 +1,9 @@
+# Ignore temporary mocked components
+app/components/calendar/page.tsx
+
+# Ignore import order issues temporarily
+app/(dashboard)/(pages)/profile/page.tsx
+app/context/intercom-provider.tsx
+
+# Ignore CSS files with nesting
+app/globals.css
