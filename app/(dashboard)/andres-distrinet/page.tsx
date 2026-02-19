@@ -30,9 +30,15 @@ interface RecoveryLinkData {
   time: Date;
 }
 
+interface TemporalSignInLinkData {
+  temporalSignInLink: string;
+  time: Date;
+}
+
 interface dataResponse {
   extractedSignInCode: SignInCodeData | null;
-  extractedRecoveryLink: RecoveryLinkData | null;
+  extractedActualizarHogarLink: RecoveryLinkData | null;
+  extractedTemporalSignInLink: TemporalSignInLinkData | null;
 }
 
 const netflixRequest = absoluteUrl('/netflix/capture');
@@ -49,6 +55,8 @@ function DistrinetPage() {
   );
   const [showRecoveryCard, setShowRecoveryCard] =
     React.useState<RecoveryLinkData | null>(null);
+  const [showTemporalSigninCard, setShowTemporalSigninCard] =
+    React.useState<TemporalSignInLinkData | null>(null);
   const [errorCode, setErrorCode] = React.useState<string | null>(null);
   const [searchedEmail, setSearchedEmail] = React.useState('');
   const [isRequesting, setIsRequesting] = React.useState(false);
@@ -58,12 +66,13 @@ function DistrinetPage() {
     setErrorCode(null);
     setShowCodeCard(null);
     setShowRecoveryCard(null);
+    setShowTemporalSigninCard(null);
     setIsRequesting(true);
     const email = data.email.trim();
     if (!email) throw new Error(requiredRules.required);
     setSearchedEmail(email);
     setAttemptCount(0);
-    const Attempts = [1000, 2000];
+    const Attempts = [1000, 1001, 1002];
     for (const delay of Attempts) {
       try {
         setAttemptCount((prev) => prev + 1);
@@ -79,16 +88,29 @@ function DistrinetPage() {
         if (response.status !== 200 && response.status !== 201)
           throw new Error('Failed to request codes');
         const data: dataResponse = response.data;
-        setShowRecoveryCard(data.extractedRecoveryLink || null);
+
+        if (
+          !data.extractedActualizarHogarLink &&
+          !data.extractedSignInCode &&
+          !data.extractedTemporalSignInLink
+        ) {
+          throw new Error('No netflix emails found');
+        }
+        setShowTemporalSigninCard(data.extractedTemporalSignInLink || null);
+        setShowRecoveryCard(data.extractedActualizarHogarLink || null);
         setShowCodeCard(data.extractedSignInCode || null);
         break;
       } catch (error: unknown) {
         const errorMessage =
           error instanceof AxiosError
-            ? error.message
+            ? error.response &&
+              error.response.data &&
+              error.response.data.message
+              ? error.response.data.message
+              : error.message
             : error instanceof Error
               ? error.message
-              : 'Unknown error occurred.';
+              : 'An unknown error occurred';
         if (Attempts.indexOf(delay) === Attempts.length - 1) {
           setErrorCode(errorMessage);
           break;
@@ -101,7 +123,12 @@ function DistrinetPage() {
   };
 
   const executeLink = async (link: string) => {
-    window.confirm(`Quieres abrir este enlace? ${link}`);
+    window.open(link, '_blank');
+    setShowRecoveryCard(null);
+    setShowCodeCard(null);
+    setShowTemporalSigninCard(null);
+    setErrorCode(null);
+    setSearchedEmail('');
   };
 
   return (
@@ -147,197 +174,261 @@ function DistrinetPage() {
             alt={'Netflix'}
           />{' '}
         </div>
-
-        <div className="relative rounded-xl mx-auto justify-center flex flex-col items-center max-w-[90vw] lg:max-w-[1600px] min-w-[85%] min-h-[500px] overflow-hidden p-12 border bg-background">
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="w-[90%] relative z-10"
-          >
-            <div className="space-y-4">
-              <label
-                htmlFor="email"
-                className="text-base md:text-lg font-medium block"
-              >
-                Consulta tus códigos aqui abajo:
-              </label>
-              <div className="flex flex-col md:flex-row gap-3 md:gap-4 items-stretch md:items-start">
-                <div className="flex-1">
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="tu@email.com"
-                    className="h-14 md:h-16 text-base md:text-lg"
-                    {...register('email', emailRules)}
-                  />
-                  <FormError
-                    errors={errors}
-                    field="email"
-                    className="text-sm text-red-500 mt-1"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="h-14 md:h-16 px-8 md:px-12 text-base md:text-lg w-full md:w-auto"
+        <ShineBorder
+          className="text-center capitalize bg-muted max-w-[90vw] lg:max-w-[1600px] min-w-[85%] min-h-[500px] p-12"
+          color={['#6022ff', '#f21a42', '#ff8c00']}
+          borderWidth={53}
+          borderRadius={40}
+        >
+          <div className="relative rounded-2xl mx-auto justify-center flex flex-col items-center overflow-hidden p-8 border bg-background w-full">
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              className="w-[90%] relative z-10 rounded-2xl"
+            >
+              <div className="space-y-4 w-full">
+                <label
+                  htmlFor="email"
+                  className="text-base md:text-lg font-medium block font-bold text-dark dark:text-blue-500"
                 >
-                  Consultar
-                </Button>
-              </div>
-            </div>
-          </form>
-          <BorderBeam
-            size={250}
-            duration={12}
-            delay={9}
-            className="pointer-events-none"
-          />
-          <div className="mt-8 w-[90%] relative z-10 flex flex-col gap-4 justify-left text-lg font-medium block">
-            <p>Resultados de busqueda:</p>
-          </div>
-
-          {!isRequesting &&
-            !showRecoveryCard &&
-            !showCodeCard &&
-            !errorCode && (
-              <div className="mt-8 w-[90%] relative z-10 flex flex-col items-center gap-6 p-8 bg-muted/50 rounded-lg border-2 border-dashed border-primary/30">
-                <div className="text-primary animate-pulse">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="64"
-                    height="64"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+                  Consulta tus códigos aqui abajo:
+                </label>
+                <p className="text-[20px] font-bold text-dark dark:text-white text-center">
+                  📌 si tu codigo no aparece o esta vencido, recuerda{' '}
+                  <span className="text-red-500">REENVIAR </span>
+                  la solicitud en tu <br /> dispositivo movil📲 o TV 📺.
+                </p>
+                <div className="flex flex-col gap-3 md:gap-4 items-stretch md:items-start w-full">
+                  <div className="flex-1 w-full">
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="tu@email.com"
+                      className="h-[5rem] md:h-[5rem] w-full text-base md:text-lg"
+                      {...register('email', emailRules)}
+                    />
+                    <FormError
+                      errors={errors}
+                      field="email"
+                      className="text-sm text-red-500 mt-1"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="h-14 md:h-16 px-8 md:px-12 text-base md:text-lg w-full"
                   >
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="m21 21-4.3-4.3" />
-                  </svg>
+                    Consultar
+                  </Button>
                 </div>
+              </div>
+            </form>
+            <div className="mt-8 w-[90%] relative z-10 flex flex-col gap-4 justify-left text-lg font-medium block">
+              <p>Resultados de busqueda:</p>
+            </div>
+
+            {!isRequesting &&
+              !showRecoveryCard?.recoveryLink &&
+              !showCodeCard?.signInCode &&
+              !errorCode && (
+                <div className="mt-8 w-[90%] relative z-10 flex flex-col items-center gap-6 p-8 bg-muted/50 rounded-lg border-2 border-dashed border-primary/30">
+                  <div className="text-primary animate-pulse">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="64"
+                      height="64"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.3-4.3" />
+                    </svg>
+                  </div>
+                  <p className="text-base md:text-lg font-semibold text-primary text-center">
+                    ¡Atent@, aquí saldrán tus resultados de búsqueda!
+                  </p>
+                </div>
+              )}
+
+            {isRequesting && (
+              <div className="mt-8 w-[90%] relative z-10 flex flex-col items-center gap-6 p-8 bg-muted/50 rounded-lg border-2 border-dashed border-primary/30">
+                <SmallLoader />
                 <p className="text-base md:text-lg font-semibold text-primary text-center">
-                  ¡Atent@, aquí saldrán tus resultados de búsqueda!
+                  buscando coincidencias...{' '}
+                  <span>intento {attemptCount}/3</span>
                 </p>
               </div>
             )}
 
-          {isRequesting && (
-            <div className="mt-8 w-[90%] relative z-10 flex flex-col items-center gap-6 p-8 bg-muted/50 rounded-lg border-2 border-dashed border-primary/30">
-              <SmallLoader />
-              <p className="text-base md:text-lg font-semibold text-primary text-center">
-                buscando coincidencias... <span>intento {attemptCount}/3</span>
-              </p>
-            </div>
-          )}
+            {errorCode &&
+              !showRecoveryCard?.recoveryLink &&
+              !showCodeCard?.signInCode && (
+                <div className="mt-8 w-[90%] relative z-10 bg-red-50 dark:bg-red-950 border-2 border-red-500 rounded-lg p-4 md:p-8 flex flex-col items-center gap-4">
+                  <div className="text-red-600 dark:text-red-400">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="64"
+                      height="64"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                  </div>
+                  <h3 className="text-lg md:text-xl font-bold text-red-700 dark:text-red-300">
+                    Código no encontrado
+                  </h3>
+                  <p className="text-sm md:text-base text-center text-red-600 dark:text-red-400 px-2">
+                    No se encontró ningún código reciente para{' '}
+                    <span className="font-semibold break-all">
+                      {searchedEmail}
+                    </span>
+                  </p>
+                  <p className="text-xl md:text-xl text-center text-dark dark:text-white px-2">
+                    ⚠️ Asegúrate de haber solicitado el correo primero y espera
+                    unos segundos para que llegue.⏳
+                  </p>
+                  <p className="text-[5px] text-gray-500 absolute left-3 bottom-0">
+                    {errorCode}
+                  </p>
+                </div>
+              )}
 
-          {errorCode && !showRecoveryCard && !showCodeCard && (
-            <div className="mt-8 w-[90%] relative z-10 bg-red-50 dark:bg-red-950 border-2 border-red-500 rounded-lg p-4 md:p-8 flex flex-col items-center gap-4">
-              <div className="text-red-600 dark:text-red-400">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="64"
-                  height="64"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="12" />
-                  <line x1="12" y1="16" x2="12.01" y2="16" />
-                </svg>
+            {(showRecoveryCard?.recoveryLink ||
+              showCodeCard?.signInCode ||
+              showTemporalSigninCard?.temporalSignInLink) && (
+              <div className="flex flex-col md:flex-row gap-4 md:gap-6 mt-8 w-[90%] relative z-10">
+                {showRecoveryCard?.recoveryLink && (
+                  <div className="flex-1 bg-blue-50/80 dark:bg-blue-950/80 backdrop-blur-sm border-2 border-blue-500 rounded-lg p-6 flex flex-col items-center gap-4">
+                    <div className="text-blue-600 dark:text-blue-400">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="48"
+                        height="48"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M4 12L12 5l8 7" />
+                        <rect x="6" y="12" width="12" height="11" rx="2" />
+                      </svg>
+                    </div>
+                    <p className="text-base text-center font-medium text-blue-700 dark:text-blue-300">
+                      Se ha encontrado un enlace para{' '}
+                      <span className="text-blue-800 font-bold dark:text-red-400">
+                        actualizar tu hogar de netflix.🎉🎉
+                      </span>
+                    </p>
+                    <Button
+                      onClick={async () =>
+                        await executeLink(showRecoveryCard.recoveryLink)
+                      }
+                      variant="outline"
+                      size="lg"
+                      className="h-16 px-12 text-lg border-blue-500 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900"
+                    >
+                      Actualizar
+                    </Button>
+                    <p className="text-sm text-center text-blue-600 dark:text-blue-400 px-2">
+                      {friendlyTimeFormat(new Date(showRecoveryCard.time))}
+                    </p>
+                  </div>
+                )}
+
+                {showCodeCard?.signInCode && (
+                  <div className="flex-1 bg-blue-50/80 dark:bg-blue-950/80 backdrop-blur-sm border-2 border-blue-500 rounded-lg p-6 flex flex-col items-center gap-4">
+                    <div className="text-blue-600 dark:text-blue-400">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="48"
+                        height="48"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="8" r="4" />
+                        <path d="M4 20c0-4 16-4 16 0" />
+                      </svg>
+                    </div>
+                    <p className="text-base text-center font-medium text-blue-700 dark:text-blue-300">
+                      Se ha encontrado un código de{' '}
+                      <span className="text-blue-800 font-bold dark:text-red-400">
+                        Inicio de sesion🎉🎉
+                      </span>
+                      .
+                    </p>
+                    <p className="text-4xl md:text-5xl font-bold text-blue-800 dark:text-blue-200">
+                      {showCodeCard.signInCode ?? ''}
+                    </p>
+                    <p className="text-sm text-center text-blue-600 dark:text-blue-400 px-2">
+                      {friendlyTimeFormat(new Date(showCodeCard.time))}
+                    </p>
+                  </div>
+                )}
+
+                {showTemporalSigninCard?.temporalSignInLink && (
+                  <div className="flex-1 bg-blue-50/80 dark:bg-blue-950/80 backdrop-blur-sm border-2 border-blue-500 rounded-lg p-6 flex flex-col items-center gap-4">
+                    <div className="text-blue-600 dark:text-blue-400">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="48"
+                        height="48"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="8" r="4" />
+                        <path d="M4 20c0-4 16-4 16 0" />
+                      </svg>
+                    </div>
+                    <p className="text-base text-center font-medium text-blue-700 dark:text-blue-300">
+                      Se ha encontrado un enlace para{' '}
+                      <span className="text-blue-800 font-bold dark:text-red-400">
+                        obtener codigo de inicio temporal de netflix.🎉🎉
+                      </span>
+                      .
+                    </p>
+                    <Button
+                      onClick={async () =>
+                        await executeLink(
+                          showTemporalSigninCard.temporalSignInLink
+                        )
+                      }
+                      variant="outline"
+                      size="lg"
+                      className="h-16 px-12 text-lg border-blue-500 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900"
+                    >
+                      Obtener codigo
+                    </Button>
+                    <p className="text-sm text-center text-blue-600 dark:text-blue-400 px-2">
+                      {friendlyTimeFormat(
+                        new Date(showTemporalSigninCard.time)
+                      )}
+                    </p>
+                  </div>
+                )}
               </div>
-              <h3 className="text-lg md:text-xl font-bold text-red-700 dark:text-red-300">
-                Código no encontrado
-              </h3>
-              <p className="text-sm md:text-base text-center text-red-600 dark:text-red-400 px-2">
-                No se encontró ningún código reciente para{' '}
-                <span className="font-semibold break-all">{searchedEmail}</span>
-              </p>
-              <p className="text-xs md:text-sm text-center text-red-600/80 dark:text-red-400/80 max-w-md px-2">
-                Asegúrate de haber solicitado el código primero y espera unos
-                segundos para que llegue.
-              </p>
-              <p className="text-sm">Código de error: {errorCode}</p>
-            </div>
-          )}
-
-          {(showRecoveryCard || showCodeCard) && (
-            <div className="flex flex-col md:flex-row gap-4 md:gap-6 mt-8 w-[90%] relative z-10">
-              {showRecoveryCard && (
-                <div className="flex-1 bg-blue-50/80 dark:bg-blue-950/80 backdrop-blur-sm border-2 border-blue-500 rounded-lg p-6 flex flex-col items-center gap-4">
-                  <div className="text-blue-600 dark:text-blue-400">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="48"
-                      height="48"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M3 9h18v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9Z" />
-                      <path d="m3 9 2.45-4.9A2 2 0 0 1 7.24 3h9.52a2 2 0 0 1 1.8 1.1L21 9" />
-                      <path d="M12 3v6" />
-                    </svg>
-                  </div>
-                  <p className="text-base text-center font-medium text-blue-700 dark:text-blue-300">
-                    Se ha encontrado un enlace para actualizar tu hogar de
-                    netflix.
-                  </p>
-                  <Button
-                    onClick={async () =>
-                      await executeLink(showRecoveryCard.recoveryLink)
-                    }
-                    variant="outline"
-                    size="default"
-                    className="border-blue-500 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900"
-                  >
-                    Actualizar
-                  </Button>
-                  <p className="text-sm text-center text-blue-600 dark:text-blue-400 px-2">
-                    {friendlyTimeFormat(new Date(showRecoveryCard.time))}
-                  </p>
-                </div>
-              )}
-
-              {showCodeCard && (
-                <div className="flex-1 bg-blue-50/80 dark:bg-blue-950/80 backdrop-blur-sm border-2 border-blue-500 rounded-lg p-6 flex flex-col items-center gap-4">
-                  <div className="text-blue-600 dark:text-blue-400">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="48"
-                      height="48"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                    </svg>
-                  </div>
-                  <p className="text-base text-center font-medium text-blue-700 dark:text-blue-300">
-                    Se ha encontrado un código de Inicio de sesion.
-                  </p>
-                  <p className="text-2xl md:text-3xl font-bold text-blue-800 dark:text-blue-200">
-                    {showCodeCard.signInCode ?? ''}
-                  </p>
-                  <p className="text-sm text-center text-blue-600 dark:text-blue-400 px-2">
-                    {friendlyTimeFormat(new Date(showCodeCard.time))}
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </ShineBorder>
       </section>
     </>
   );

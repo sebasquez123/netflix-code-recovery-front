@@ -8,7 +8,7 @@ export const friendlyTimeFormat = (time: Date) => {
   const pastTime = new Date(time);
   const now = new Date();
   const diff = Math.floor((now.getTime() - pastTime.getTime()) / 60000);
-  if (diff < 15) return 'Quedan ' + diff + ' minutos';
+  if (diff < 15) return 'Vence en ' + diff + ' minutos';
 
   if (diff > 15 && diff <= 60) return 'Vencido hace ' + diff + ' minutos';
   if (diff > 60) return 'Vencido hace mucho tiempo';

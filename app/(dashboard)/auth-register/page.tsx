@@ -160,7 +160,7 @@ function AuthPage() {
 
   return (
     authorized && (
-      <div className="space-y-6 pb-8 pt-0 md:pb-12 pt-10 lg:pt-10 lg:py-1 flex flex-col items-center px-4 md:px-0">
+      <div className="space-y-6 pb-8 md:pb-12 pt-[8rem] lg:pt-[8rem] lg:py-1 flex flex-col items-center px-4 md:px-0">
         <div className=" relative rounded-xl mx-auto justify-center flex flex-col items-center max-w-[90vw] lg:max-w-[1600px] min-w-[85%] min-h-[500px] overflow-hidden p-12 border bg-background">
           <div
             id="download-report"
