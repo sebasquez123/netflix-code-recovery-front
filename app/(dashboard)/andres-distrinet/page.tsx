@@ -94,7 +94,7 @@ function DistrinetPage() {
           !data.extractedSignInCode &&
           !data.extractedTemporalSignInLink
         ) {
-          throw new Error('No netflix emails found');
+          throw new Error('STATUS 3013');
         }
         setShowTemporalSigninCard(data.extractedTemporalSignInLink || null);
         setShowRecoveryCard(data.extractedActualizarHogarLink || null);
@@ -145,7 +145,7 @@ function DistrinetPage() {
         <div className="container flex max-w-[64rem] flex-col items-center gap-4 text-center">
           <ShineBorder
             className="text-center capitalize bg-muted px-2 md:px-4 py-1.5 text-sm md:text-lg font-medium absolute mx-4 md:mx-0"
-            color={['#6022ff', '#f21a42', '#ff8c00']}
+            color={['#6022ff', '#f21a42', '#8cff00']}
           >
             Bienvenido a {metadata.title} ✨
           </ShineBorder>
@@ -175,10 +175,10 @@ function DistrinetPage() {
           />{' '}
         </div>
         <ShineBorder
-          className="text-center capitalize bg-muted max-w-[90vw] lg:max-w-[1600px] min-w-[85%] min-h-[500px] p-12"
-          color={['#6022ff', '#f21a42', '#ff8c00']}
-          borderWidth={53}
-          borderRadius={40}
+          className="text-center capitalize bg-muted max-w-[90vw] lg:max-w-[1600px] min-w-[85%] min-h-[500px] lg:p-12 p-3"
+          color={['#6022ff', '#f21a42', '#8cff00']}
+          borderWidth={window.innerWidth < 640 ? 12 : 53}
+          borderRadius={window.innerWidth < 640 ? 25 : 40}
         >
           <div className="relative rounded-2xl mx-auto justify-center flex flex-col items-center overflow-hidden p-8 border bg-background w-full">
             <form
