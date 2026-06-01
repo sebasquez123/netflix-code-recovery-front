@@ -1,6 +1,6 @@
 'use client';
 import axios, { AxiosError } from 'axios';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import FormError from '~/app/components/form-error';
@@ -35,10 +35,15 @@ interface TemporalSignInLinkData {
   time: Date;
 }
 
+interface VerificationCodeData {
+  verificationCode: string;
+  time: Date;
+}
 interface dataResponse {
   extractedSignInCode: SignInCodeData | null;
   extractedActualizarHogarLink: RecoveryLinkData | null;
   extractedTemporalSignInLink: TemporalSignInLinkData | null;
+  extractedVerificationCode: VerificationCodeData | null;
 }
 
 const netflixRequest = absoluteUrl('/netflix/capture');
@@ -50,17 +55,18 @@ function DistrinetPage() {
     formState: { errors },
   } = useForm<FormData>();
 
-  const [showCodeCard, setShowCodeCard] = React.useState<SignInCodeData | null>(
-    null
-  );
+  const [showCodeCard, setShowCodeCard] = useState<SignInCodeData | null>(null);
   const [showRecoveryCard, setShowRecoveryCard] =
-    React.useState<RecoveryLinkData | null>(null);
+    useState<RecoveryLinkData | null>(null);
   const [showTemporalSigninCard, setShowTemporalSigninCard] =
-    React.useState<TemporalSignInLinkData | null>(null);
-  const [errorCode, setErrorCode] = React.useState<string | null>(null);
-  const [searchedEmail, setSearchedEmail] = React.useState('');
-  const [isRequesting, setIsRequesting] = React.useState(false);
-  const [attemptCount, setAttemptCount] = React.useState(0);
+    useState<TemporalSignInLinkData | null>(null);
+  const [showVerificationCard, setShowVerificationCard] =
+    useState<VerificationCodeData | null>(null);
+
+  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const [searchedEmail, setSearchedEmail] = useState('');
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [attemptCount, setAttemptCount] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -96,13 +102,15 @@ function DistrinetPage() {
         if (
           !data.extractedActualizarHogarLink &&
           !data.extractedSignInCode &&
-          !data.extractedTemporalSignInLink
-        ) {
+          !data.extractedTemporalSignInLink &&
+          !data.extractedVerificationCode
+        )
           throw new Error('STATUS 3013');
-        }
+
         setShowTemporalSigninCard(data.extractedTemporalSignInLink || null);
         setShowRecoveryCard(data.extractedActualizarHogarLink || null);
         setShowCodeCard(data.extractedSignInCode || null);
+        setShowVerificationCard(data.extractedVerificationCode || null);
         break;
       } catch (error: unknown) {
         const errorMessage =
@@ -131,6 +139,7 @@ function DistrinetPage() {
     setShowRecoveryCard(null);
     setShowCodeCard(null);
     setShowTemporalSigninCard(null);
+    setShowVerificationCard(null);
     setErrorCode(null);
     setSearchedEmail('');
   };
@@ -427,6 +436,40 @@ function DistrinetPage() {
                       {friendlyTimeFormat(
                         new Date(showTemporalSigninCard.time)
                       )}
+                    </p>
+                  </div>
+                )}
+
+                {showVerificationCard?.verificationCode && (
+                  <div className="flex-1 bg-blue-50/80 dark:bg-blue-950/80 backdrop-blur-sm border-2 border-blue-500 rounded-lg p-6 flex flex-col items-center gap-4">
+                    <div className="text-blue-600 dark:text-blue-400">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="48"
+                        height="48"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="8" r="4" />
+                        <path d="M4 20c0-4 16-4 16 0" />
+                      </svg>
+                    </div>
+                    <p className="text-base text-center font-medium text-blue-700 dark:text-blue-300">
+                      Se ha encontrado un código de{' '}
+                      <span className="text-blue-800 font-bold dark:text-red-400">
+                        verificación🎉🎉
+                      </span>
+                      .
+                    </p>
+                    <p className="text-4xl md:text-5xl font-bold text-blue-800 dark:text-blue-200">
+                      {showVerificationCard.verificationCode ?? ''}
+                    </p>
+                    <p className="text-sm text-center text-blue-600 dark:text-blue-400 px-2">
+                      {friendlyTimeFormat(new Date(showVerificationCard.time))}
                     </p>
                   </div>
                 )}
